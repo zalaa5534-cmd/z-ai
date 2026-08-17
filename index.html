@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Z AI</title>
+
+  <!-- Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- حماية HTML الناتج من الـAI -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 
   <style>
     * {
@@ -13,34 +19,72 @@
       padding: 0;
     }
 
+    html,
     body {
-      font-family: Arial, sans-serif;
+      width: 100%;
+      height: 100%;
       background: #0b0b0f;
-      color: white;
-      height: 100vh;
+    }
+
+    body {
+      font-family:
+        Arial,
+        "Segoe UI",
+        Tahoma,
+        sans-serif;
+
+      color: #fff;
       overflow: hidden;
     }
 
-    .app {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+    button,
+    textarea {
+      font-family: inherit;
     }
 
+    /* =========================
+       APP
+    ========================= */
+
+    .app {
+      width: 100%;
+      height: 100dvh;
+
+      display: flex;
+      flex-direction: column;
+
+      background: #0b0b0f;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
     header {
+      flex: 0 0 65px;
+
       height: 65px;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
+
       padding: 0 20px;
-      border-bottom: 1px solid #24242c;
+
       background: #101016;
+
+      border-bottom: 1px solid #24242c;
+
+      z-index: 20;
     }
 
     .logo {
-      font-size: 25px;
-      font-weight: bold;
-      letter-spacing: -1px;
+      direction: ltr;
+
+      font-size: 26px;
+      font-weight: 700;
+
+      letter-spacing: -1.5px;
     }
 
     .logo span {
@@ -48,34 +92,88 @@
     }
 
     .status {
-      font-size: 13px;
       color: #8f8f9d;
+      font-size: 14px;
     }
+
+    /* =========================
+       CHAT AREA
+    ========================= */
 
     .chat {
       flex: 1;
+
+      min-height: 0;
+
+      width: 100%;
+
       overflow-y: auto;
-      padding: 25px 15px 120px;
+      overflow-x: hidden;
+
+      padding:
+        28px
+        16px
+        170px;
+
+      scroll-behavior: smooth;
+
+      -webkit-overflow-scrolling: touch;
+
+      overscroll-behavior: contain;
     }
+
+    .chat::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .chat::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat::-webkit-scrollbar-thumb {
+      background: #30303a;
+      border-radius: 20px;
+    }
+
+    /* Firefox */
+
+    .chat {
+      scrollbar-width: thin;
+      scrollbar-color: #30303a transparent;
+    }
+
+    /* =========================
+       WELCOME
+    ========================= */
 
     .welcome {
       max-width: 700px;
+
       margin: 80px auto;
+
       text-align: center;
     }
 
     .welcome-logo {
       width: 75px;
       height: 75px;
+
       margin: 0 auto 20px;
-      border-radius: 22px;
+
       display: flex;
       align-items: center;
       justify-content: center;
+
+      border-radius: 22px;
+
       background: #ec4899;
+
       font-size: 35px;
       font-weight: bold;
-      box-shadow: 0 0 40px rgba(236, 72, 153, 0.25);
+
+      box-shadow:
+        0 0 40px
+        rgba(236, 72, 153, 0.25);
     }
 
     .welcome h1 {
@@ -85,78 +183,474 @@
 
     .welcome p {
       color: #92929e;
-      line-height: 1.6;
+
+      line-height: 1.7;
+
+      font-size: 15px;
     }
+
+    /* =========================
+       MESSAGE ROW
+    ========================= */
 
     .message {
+      width: 100%;
+
       max-width: 850px;
-      margin: 0 auto 18px;
+
+      margin: 0 auto 28px;
+
       display: flex;
+
+      animation: messageIn 0.2s ease;
     }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(7px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* =========================
+       USER MESSAGE
+    ========================= */
 
     .message.user {
-      justify-content: flex-end;
-    }
-
-    .bubble {
-      max-width: 80%;
-      padding: 13px 16px;
-      border-radius: 18px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
+      justify-content: flex-start;
     }
 
     .user .bubble {
+      direction: rtl;
+
+      max-width: min(80%, 650px);
+
+      padding: 12px 17px;
+
       background: #ec4899;
-      color: white;
-      border-bottom-right-radius: 5px;
+
+      color: #fff;
+
+      border-radius: 20px;
+
+      border-bottom-right-radius: 6px;
+
+      line-height: 1.65;
+
+      font-size: 16px;
+
+      white-space: pre-wrap;
+
+      word-break: break-word;
+
+      box-shadow:
+        0 4px 18px
+        rgba(236, 72, 153, 0.12);
     }
 
-    .ai .bubble {
-      background: #17171f;
-      border: 1px solid #282832;
-      border-bottom-left-radius: 5px;
+    /* =========================
+       AI MESSAGE
+       بدون برواز
+    ========================= */
+
+    .message.ai {
+      justify-content: flex-start;
+
+      direction: rtl;
     }
+
+    .ai-content {
+      width: 100%;
+
+      max-width: 850px;
+
+      padding: 0;
+
+      background: transparent;
+
+      border: none;
+
+      color: #f4f4f5;
+
+      font-size: 16px;
+
+      line-height: 1.8;
+
+      word-break: break-word;
+    }
+
+    /* =========================
+       AI MARKDOWN
+    ========================= */
+
+    .ai-content p {
+      margin: 0 0 18px;
+    }
+
+    .ai-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .ai-content h1,
+    .ai-content h2,
+    .ai-content h3,
+    .ai-content h4 {
+      margin: 24px 0 12px;
+
+      line-height: 1.4;
+
+      color: #fff;
+    }
+
+    .ai-content h1 {
+      font-size: 26px;
+    }
+
+    .ai-content h2 {
+      font-size: 22px;
+    }
+
+    .ai-content h3 {
+      font-size: 19px;
+    }
+
+    .ai-content h4 {
+      font-size: 17px;
+    }
+
+    .ai-content strong {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .ai-content em {
+      font-style: italic;
+    }
+
+    .ai-content ul,
+    .ai-content ol {
+      margin: 10px 0 20px;
+
+      padding-right: 25px;
+    }
+
+    .ai-content li {
+      margin: 7px 0;
+
+      padding-right: 4px;
+    }
+
+    .ai-content blockquote {
+      margin: 18px 0;
+
+      padding: 10px 16px;
+
+      border-right: 3px solid #ec4899;
+
+      color: #b8b8c4;
+
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .ai-content a {
+      color: #ec4899;
+
+      text-decoration: none;
+    }
+
+    .ai-content a:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================
+       INLINE CODE
+    ========================= */
+
+    .ai-content code:not(pre code) {
+      direction: ltr;
+
+      display: inline-block;
+
+      padding: 2px 7px;
+
+      border-radius: 6px;
+
+      background: #191922;
+
+      border: 1px solid #2b2b36;
+
+      color: #f3a1ca;
+
+      font-family:
+        Consolas,
+        Monaco,
+        monospace;
+
+      font-size: 14px;
+    }
+
+    /* =========================
+       CODE BLOCK
+    ========================= */
+
+    .code-wrapper {
+      direction: ltr;
+
+      width: 100%;
+
+      margin: 18px 0;
+
+      overflow: hidden;
+
+      border-radius: 12px;
+
+      border: 1px solid #2b2b35;
+
+      background: #101016;
+    }
+
+    .code-header {
+      height: 42px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 12px;
+
+      background: #17171f;
+
+      border-bottom: 1px solid #2b2b35;
+    }
+
+    .code-language {
+      color: #9a9aa7;
+
+      font-size: 12px;
+
+      text-transform: lowercase;
+    }
+
+    .copy-code {
+      border: 1px solid #383844;
+
+      background: #20202a;
+
+      color: #d7d7df;
+
+      padding: 6px 10px;
+
+      border-radius: 7px;
+
+      font-size: 12px;
+
+      cursor: pointer;
+
+      transition: 0.2s;
+    }
+
+    .copy-code:hover {
+      background: #2a2a35;
+    }
+
+    .copy-code.copied {
+      color: #fff;
+
+      background: #ec4899;
+
+      border-color: #ec4899;
+    }
+
+    .code-wrapper pre {
+      margin: 0;
+
+      padding: 16px;
+
+      overflow-x: auto;
+
+      direction: ltr;
+
+      text-align: left;
+
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .code-wrapper pre::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .code-wrapper pre::-webkit-scrollbar-thumb {
+      background: #33333d;
+
+      border-radius: 20px;
+    }
+
+    .code-wrapper pre code {
+      display: block;
+
+      min-width: max-content;
+
+      color: #e7e7ee;
+
+      background: transparent;
+
+      border: none;
+
+      padding: 0;
+
+      font-family:
+        Consolas,
+        Monaco,
+        "Courier New",
+        monospace;
+
+      font-size: 13px;
+
+      line-height: 1.65;
+
+      white-space: pre;
+    }
+
+    /* =========================
+       TYPING
+    ========================= */
+
+    .typing {
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      min-height: 25px;
+    }
+
+    .typing span {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: #8d8d99;
+
+      animation: typing 1.2s infinite;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    @keyframes typing {
+      0%,
+      60%,
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+
+      30% {
+        opacity: 1;
+        transform: translateY(-3px);
+      }
+    }
+
+    /* =========================
+       INPUT AREA
+    ========================= */
 
     .input-area {
       position: fixed;
+
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 15px;
-      background: linear-gradient(
-        transparent,
-        #0b0b0f 25%
-      );
+
+      z-index: 30;
+
+      padding:
+        18px
+        15px
+        calc(15px + env(safe-area-inset-bottom));
+
+      background:
+        linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(11, 11, 15, 0.94) 28%,
+          #0b0b0f 55%
+        );
+
+      pointer-events: none;
+    }
+
+    .input-box,
+    .hint {
+      pointer-events: auto;
     }
 
     .input-box {
+      width: 100%;
+
       max-width: 850px;
-      margin: auto;
+
+      margin: 0 auto;
+
       display: flex;
+
       align-items: flex-end;
+
       gap: 10px;
-      padding: 10px;
+
+      padding: 9px;
+
       background: #15151c;
+
       border: 1px solid #30303a;
-      border-radius: 18px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.4);
+
+      border-radius: 20px;
+
+      box-shadow:
+        0 10px 40px
+        rgba(0, 0, 0, 0.45);
     }
 
     textarea {
       flex: 1;
-      resize: none;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: white;
-      font-size: 16px;
-      line-height: 1.5;
+
+      width: 100%;
+
       min-height: 45px;
-      max-height: 140px;
+      max-height: 150px;
+
+      resize: none;
+
+      outline: none;
+      border: none;
+
+      background: transparent;
+
+      color: white;
+
+      font-size: 16px;
+
+      line-height: 1.5;
+
       padding: 10px;
+
+      direction: rtl;
+
       font-family: inherit;
+
+      overflow-y: auto;
     }
 
     textarea::placeholder {
@@ -164,50 +658,173 @@
     }
 
     #send {
-      width: 45px;
-      height: 45px;
+      flex: 0 0 48px;
+
+      width: 48px;
+      height: 48px;
+
       border: none;
-      border-radius: 14px;
+
+      border-radius: 15px;
+
       background: #ec4899;
+
       color: white;
-      font-size: 20px;
+
+      font-size: 23px;
+
       cursor: pointer;
-      transition: .2s;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      transition:
+        transform 0.2s,
+        opacity 0.2s;
     }
 
     #send:hover {
       transform: scale(1.05);
     }
 
+    #send:active {
+      transform: scale(0.96);
+    }
+
     #send:disabled {
-      opacity: .5;
+      opacity: 0.5;
+
       cursor: not-allowed;
+
       transform: none;
     }
 
     .hint {
       max-width: 850px;
+
       margin: 8px auto 0;
+
       text-align: center;
+
       color: #666673;
+
       font-size: 11px;
     }
 
+    /* =========================
+       ERROR
+    ========================= */
+
+    .error-message {
+      color: #ff8eaa;
+
+      font-size: 14px;
+
+      line-height: 1.6;
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
     @media (max-width: 600px) {
+
       header {
+        flex: 0 0 62px;
+        height: 62px;
+
         padding: 0 15px;
       }
 
-      .welcome {
-        margin: 50px auto;
+      .logo {
+        font-size: 25px;
       }
 
-      .welcome h1 {
-        font-size: 27px;
+      .status {
+        font-size: 13px;
       }
 
-      .bubble {
+      .chat {
+        padding:
+          22px
+          12px
+          185px;
+      }
+
+      .message {
+        margin-bottom: 25px;
+      }
+
+      .user .bubble {
         max-width: 88%;
+
+        font-size: 16px;
+
+        padding: 11px 15px;
+      }
+
+      .ai-content {
+        font-size: 16px;
+
+        line-height: 1.8;
+      }
+
+      .ai-content h1 {
+        font-size: 24px;
+      }
+
+      .ai-content h2 {
+        font-size: 21px;
+      }
+
+      .ai-content h3 {
+        font-size: 18px;
+      }
+
+      .code-wrapper {
+        border-radius: 10px;
+
+        margin: 15px 0;
+      }
+
+      .code-wrapper pre {
+        padding: 13px;
+      }
+
+      .code-wrapper pre code {
+        font-size: 12px;
+      }
+
+      .input-area {
+        padding:
+          12px
+          10px
+          calc(10px + env(safe-area-inset-bottom));
+      }
+
+      .input-box {
+        border-radius: 18px;
+
+        padding: 8px;
+      }
+
+      textarea {
+        font-size: 16px;
+
+        min-height: 44px;
+      }
+
+      #send {
+        width: 46px;
+        height: 46px;
+
+        flex-basis: 46px;
+      }
+
+      .hint {
+        margin-top: 7px;
       }
     }
   </style>
@@ -217,25 +834,57 @@
 
   <div class="app">
 
+    <!-- =========================
+         HEADER
+    ========================== -->
+
     <header>
-      <div class="logo">Z <span>AI</span></div>
-      <div class="status" id="status">AI Assistant</div>
+      <div class="logo">
+        Z <span>AI</span>
+      </div>
+
+      <div class="status">
+        AI Assistant
+      </div>
     </header>
 
-    <main class="chat" id="chat">
 
-      <div class="welcome" id="welcome">
-        <div class="welcome-logo">Z</div>
+    <!-- =========================
+         CHAT
+    ========================== -->
 
-        <h1>Welcome to Z AI</h1>
+    <main
+      class="chat"
+      id="chat"
+      aria-live="polite"
+    >
+
+      <div
+        class="welcome"
+        id="welcome"
+      >
+
+        <div class="welcome-logo">
+          Z
+        </div>
+
+        <h1>
+          Welcome to Z AI
+        </h1>
 
         <p>
-          Your AI assistant is ready.<br>
-          Ask anything and let's get started.
+          مساعدك الذكي جاهز.<br>
+          اسأل أي شيء وابدأ المحادثة.
         </p>
+
       </div>
 
     </main>
+
+
+    <!-- =========================
+         INPUT
+    ========================== -->
 
     <div class="input-area">
 
@@ -245,9 +894,16 @@
           id="message"
           placeholder="Message Z AI..."
           rows="1"
+          autocomplete="off"
         ></textarea>
 
-        <button id="send">➤</button>
+        <button
+          id="send"
+          type="button"
+          aria-label="Send message"
+        >
+          ➤
+        </button>
 
       </div>
 
@@ -259,95 +915,605 @@
 
   </div>
 
+
   <script>
-    const messageInput = document.getElementById("message");
-    const sendButton = document.getElementById("send");
-    const chat = document.getElementById("chat");
-    const welcome = document.getElementById("welcome");
-    const statusText = document.getElementById("status");
 
-    function addMessage(text, type) {
-      if (welcome) {
-        welcome.style.display = "none";
-      }
+    /* =========================
+       ELEMENTS
+    ========================== */
 
-      const message = document.createElement("div");
-      message.className = "message " + type;
+    const messageInput =
+      document.getElementById("message");
 
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = text;
+    const sendButton =
+      document.getElementById("send");
 
-      message.appendChild(bubble);
-      chat.appendChild(message);
+    const chat =
+      document.getElementById("chat");
 
-      chat.scrollTop = chat.scrollHeight;
+    const welcome =
+      document.getElementById("welcome");
 
-      return bubble;
-    }
 
-    async function sendMessage() {
-      const text = messageInput.value.trim();
+    /* =========================
+       MARKED CONFIG
+    ========================== */
 
-      if (!text || sendButton.disabled) return;
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
 
-      addMessage(text, "user");
 
-      messageInput.value = "";
-      messageInput.style.height = "45px";
+    /* =========================
+       SCROLL
+    ========================== */
 
-      sendButton.disabled = true;
-      statusText.textContent = "Thinking...";
+    function scrollToBottom(smooth = true) {
 
-      const aiBubble = addMessage("...", "ai");
+      requestAnimationFrame(() => {
 
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: text
-          })
+        chat.scrollTo({
+          top: chat.scrollHeight,
+          behavior: smooth
+            ? "smooth"
+            : "auto"
         });
 
-        const data = await response.json();
+      });
 
-        if (!response.ok) {
-          throw new Error(data.error || "Request failed");
-        }
-
-        aiBubble.textContent = data.reply || "لم يصل رد من Gemini.";
-
-      } catch (error) {
-        console.error(error);
-
-        aiBubble.textContent =
-          "حصل خطأ في الاتصال بالذكاء الاصطناعي.\n\n" +
-          (error.message || "Unknown error");
-      }
-
-      sendButton.disabled = false;
-      statusText.textContent = "AI Assistant";
-
-      chat.scrollTop = chat.scrollHeight;
     }
 
-    sendButton.addEventListener("click", sendMessage);
 
-    messageInput.addEventListener("keydown", function(event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
+    /* =========================
+       REMOVE WELCOME
+    ========================== */
+
+    function hideWelcome() {
+
+      if (welcome) {
+        welcome.remove();
       }
-    });
 
-    messageInput.addEventListener("input", function() {
-      this.style.height = "45px";
-      this.style.height =
-        Math.min(this.scrollHeight, 140) + "px";
-    });
+    }
+
+
+    /* =========================
+       USER MESSAGE
+    ========================== */
+
+    function addUserMessage(text) {
+
+      hideWelcome();
+
+      const message =
+        document.createElement("div");
+
+      message.className =
+        "message user";
+
+      const bubble =
+        document.createElement("div");
+
+      bubble.className =
+        "bubble";
+
+      bubble.textContent =
+        text;
+
+      message.appendChild(bubble);
+
+      chat.appendChild(message);
+
+      scrollToBottom();
+
+    }
+
+
+    /* =========================
+       AI MESSAGE
+    ========================== */
+
+    function addAIMessage(text) {
+
+      hideWelcome();
+
+      const message =
+        document.createElement("div");
+
+      message.className =
+        "message ai";
+
+      const content =
+        document.createElement("div");
+
+      content.className =
+        "ai-content";
+
+      renderMarkdown(
+        content,
+        text
+      );
+
+      message.appendChild(content);
+
+      chat.appendChild(message);
+
+      addCopyButtons(content);
+
+      scrollToBottom();
+
+      return content;
+
+    }
+
+
+    /* =========================
+       MARKDOWN RENDER
+    ========================== */
+
+    function renderMarkdown(
+      element,
+      text
+    ) {
+
+      try {
+
+        const html =
+          marked.parse(text || "");
+
+        element.innerHTML =
+          DOMPurify.sanitize(html, {
+            USE_PROFILES: {
+              html: true
+            }
+          });
+
+        convertCodeBlocks(element);
+
+      } catch (error) {
+
+        console.error(
+          "Markdown error:",
+          error
+        );
+
+        element.textContent =
+          text;
+
+      }
+
+    }
+
+
+    /* =========================
+       CODE BLOCKS
+    ========================== */
+
+    function convertCodeBlocks(
+      container
+    ) {
+
+      const blocks =
+        container.querySelectorAll(
+          "pre"
+        );
+
+      blocks.forEach((pre) => {
+
+        const code =
+          pre.querySelector("code");
+
+        if (!code) return;
+
+        const wrapper =
+          document.createElement("div");
+
+        wrapper.className =
+          "code-wrapper";
+
+        const header =
+          document.createElement("div");
+
+        header.className =
+          "code-header";
+
+        const language =
+          document.createElement("span");
+
+        language.className =
+          "code-language";
+
+        let lang =
+          "code";
+
+        const className =
+          code.className || "";
+
+        const match =
+          className.match(
+            /language-([^\s]+)/
+          );
+
+        if (match) {
+          lang = match[1];
+        }
+
+        language.textContent =
+          lang;
+
+        const copy =
+          document.createElement("button");
+
+        copy.className =
+          "copy-code";
+
+        copy.type =
+          "button";
+
+        copy.textContent =
+          "Copy";
+
+        header.appendChild(
+          language
+        );
+
+        header.appendChild(
+          copy
+        );
+
+        wrapper.appendChild(
+          header
+        );
+
+        wrapper.appendChild(
+          pre
+        );
+
+        pre.parentNode.replaceChild(
+          wrapper,
+          pre
+        );
+
+      });
+
+    }
+
+
+    /* =========================
+       COPY CODE
+    ========================== */
+
+    function addCopyButtons(
+      container
+    ) {
+
+      const buttons =
+        container.querySelectorAll(
+          ".copy-code"
+        );
+
+      buttons.forEach((button) => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            const wrapper =
+              button.closest(
+                ".code-wrapper"
+              );
+
+            const code =
+              wrapper?.querySelector(
+                "pre code"
+              );
+
+            if (!code) return;
+
+            try {
+
+              await navigator.clipboard.writeText(
+                code.textContent
+              );
+
+              button.textContent =
+                "Copied!";
+
+              button.classList.add(
+                "copied"
+              );
+
+              setTimeout(() => {
+
+                button.textContent =
+                  "Copy";
+
+                button.classList.remove(
+                  "copied"
+                );
+
+              }, 1500);
+
+            } catch (error) {
+
+              console.error(
+                "Copy failed:",
+                error
+              );
+
+            }
+
+          }
+        );
+
+      });
+
+    }
+
+
+    /* =========================
+       TYPING INDICATOR
+    ========================== */
+
+    function showTyping() {
+
+      const message =
+        document.createElement("div");
+
+      message.className =
+        "message ai";
+
+      message.id =
+        "typing-message";
+
+      const content =
+        document.createElement("div");
+
+      content.className =
+        "ai-content";
+
+      const typing =
+        document.createElement("div");
+
+      typing.className =
+        "typing";
+
+      typing.innerHTML = `
+        <span></span>
+        <span></span>
+        <span></span>
+      `;
+
+      content.appendChild(
+        typing
+      );
+
+      message.appendChild(
+        content
+      );
+
+      chat.appendChild(
+        message
+      );
+
+      scrollToBottom();
+
+    }
+
+
+    /* =========================
+       REMOVE TYPING
+    ========================== */
+
+    function removeTyping() {
+
+      const typing =
+        document.getElementById(
+          "typing-message"
+        );
+
+      if (typing) {
+        typing.remove();
+      }
+
+    }
+
+
+    /* =========================
+       SEND MESSAGE
+    ========================== */
+
+    async function sendMessage() {
+
+      const text =
+        messageInput.value.trim();
+
+      if (!text) {
+        return;
+      }
+
+      if (
+        sendButton.disabled
+      ) {
+        return;
+      }
+
+      addUserMessage(
+        text
+      );
+
+      messageInput.value =
+        "";
+
+      messageInput.style.height =
+        "45px";
+
+      sendButton.disabled =
+        true;
+
+      showTyping();
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/chat",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                message: text
+              })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        removeTyping();
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            data?.error ||
+            "حدث خطأ في الاتصال."
+          );
+
+        }
+
+        const reply =
+          data?.reply;
+
+        if (!reply) {
+
+          throw new Error(
+            "لم يصل رد من الذكاء الاصطناعي."
+          );
+
+        }
+
+        addAIMessage(
+          reply
+        );
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+        removeTyping();
+
+        const message =
+          document.createElement(
+            "div"
+          );
+
+        message.className =
+          "message ai";
+
+        const content =
+          document.createElement(
+            "div"
+          );
+
+        content.className =
+          "ai-content error-message";
+
+        content.textContent =
+          "حصل خطأ في الاتصال بالذكاء الاصطناعي.\n\n" +
+          error.message;
+
+        message.appendChild(
+          content
+        );
+
+        chat.appendChild(
+          message
+        );
+
+        scrollToBottom();
+
+      } finally {
+
+        sendButton.disabled =
+          false;
+
+        messageInput.focus();
+
+      }
+
+    }
+
+
+    /* =========================
+       SEND BUTTON
+    ========================== */
+
+    sendButton.addEventListener(
+      "click",
+      sendMessage
+    );
+
+
+    /* =========================
+       ENTER
+    ========================== */
+
+    messageInput.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey
+        ) {
+
+          event.preventDefault();
+
+          sendMessage();
+
+        }
+
+      }
+    );
+
+
+    /* =========================
+       TEXTAREA AUTO HEIGHT
+    ========================== */
+
+    messageInput.addEventListener(
+      "input",
+      function() {
+
+        this.style.height =
+          "45px";
+
+        this.style.height =
+          Math.min(
+            this.scrollHeight,
+            150
+          ) + "px";
+
+      }
+    );
+
+
+    /* =========================
+       INITIAL FOCUS
+    ========================== */
+
+    messageInput.focus();
+
   </script>
 
 </body>
