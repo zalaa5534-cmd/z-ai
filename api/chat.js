@@ -14,6 +14,40 @@ export default async function handler(req, res) {
       });
     }
 
+    const userMessage = message.trim();
+
+    // تعريف Z AI بشكل ثابت وحرفي
+    const identityMessage =
+      "أنا Z AI، مساعد ذكاء اصطناعي تم تطويره بواسطة زياد علاء السيد ذكي. أستخدم نماذج ذكاء اصطناعي متقدمة لمساعدتك في الإجابة عن أسئلتك وتنفيذ مهامك.";
+
+    // لو المستخدم بيسأل عن هوية Z AI
+    const normalizedMessage = userMessage
+      .toLowerCase()
+      .replace(/[؟?!.,،]/g, "")
+      .trim();
+
+    const identityQuestions = [
+      "من أنت",
+      "مين انت",
+      "مين أنت",
+      "من انت",
+      "من هو z ai",
+      "من هو z ai",
+      "ايه z ai",
+      "ما هو z ai",
+      "ما هو z ai",
+      "عرف نفسك",
+      "عرفني بنفسك",
+      "من انت z ai",
+      "مين z ai"
+    ];
+
+    if (identityQuestions.includes(normalizedMessage)) {
+      return res.status(200).json({
+        reply: identityMessage
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -37,10 +71,17 @@ export default async function handler(req, res) {
               parts: [
                 {
                   text:
-                    "أنت Z AI، مساعد ذكاء اصطناعي مفيد وودود. " +
-                    "أجب باللغة التي يستخدمها المستخدم، وكن واضحًا وطبيعيًا.\n\n" +
-                    "رسالة المستخدم:\n" +
-                    message.trim()
+                    `أنت Z AI، مساعد ذكاء اصطناعي مفيد وودود.
+
+هوية Z AI الرسمية:
+${identityMessage}
+
+إذا سألك المستخدم عن هويتك أو من أنت، يجب أن يكون تعريفك مطابقًا للنص الرسمي أعلاه حرفيًا.
+
+في الأسئلة الأخرى، أجب بشكل طبيعي ومفيد باللغة التي يستخدمها المستخدم.
+
+رسالة المستخدم:
+${userMessage}`
                 }
               ]
             }
@@ -55,7 +96,9 @@ export default async function handler(req, res) {
       console.error("Gemini API error:", data);
 
       return res.status(response.status).json({
-        error: data?.error?.message || "Gemini API request failed."
+        error:
+          data?.error?.message ||
+          "Gemini API request failed."
       });
     }
 
