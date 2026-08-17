@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // السماح بطلبات POST فقط
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method not allowed"
@@ -15,7 +14,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // مفتاح Gemini محفوظ في Vercel Environment Variables
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -25,7 +23,7 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
@@ -40,7 +38,7 @@ export default async function handler(req, res) {
                 {
                   text:
                     "أنت Z AI، مساعد ذكاء اصطناعي مفيد وودود. " +
-                    "أجب باللغة التي يستخدمها المستخدم، وكن واضحًا ومختصرًا عند الحاجة.\n\n" +
+                    "أجب باللغة التي يستخدمها المستخدم، وكن واضحًا وطبيعيًا.\n\n" +
                     "رسالة المستخدم:\n" +
                     message.trim()
                 }
@@ -57,9 +55,7 @@ export default async function handler(req, res) {
       console.error("Gemini API error:", data);
 
       return res.status(response.status).json({
-        error:
-          data?.error?.message ||
-          "Gemini API request failed."
+        error: data?.error?.message || "Gemini API request failed."
       });
     }
 
@@ -80,7 +76,7 @@ export default async function handler(req, res) {
     console.error("Server error:", error);
 
     return res.status(500).json({
-      error: "حدث خطأ في الخادم أثناء الاتصال بـ Gemini."
+      error: "حدث خطأ في الاتصال بالذكاء الاصطناعي."
     });
   }
 }
