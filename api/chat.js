@@ -170,6 +170,11 @@ ZIAD Alaa Zakii
         let base64Data =
           String(file.data);
 
+        /*
+          إزالة Data URL prefix
+          إذا كان موجودًا
+        */
+
         if (base64Data.includes(",")) {
           base64Data =
             base64Data.split(",")[1];
@@ -205,7 +210,7 @@ ZIAD Alaa Zakii
     */
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
       {
         method: "POST",
 
