@@ -6,108 +6,246 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message } = req.body || {};
+    const {
+      message,
+      history = [],
+      attachments = []
+    } = req.body || {};
 
-    if (!message || !message.trim()) {
+    if (
+      (!message || !message.trim()) &&
+      (!attachments || attachments.length === 0)
+    ) {
       return res.status(400).json({
-        error: "Message is required"
+        error: "Message or attachment is required."
       });
     }
 
-    const userMessage = message.trim();
-
-    // تعريف Z AI بشكل ثابت وحرفي
-    const identityMessage =
-      "أنا Z AI، مساعد ذكاء اصطناعي تم تطويره بواسطة زياد علاء السيد ذكي. أستخدم نماذج ذكاء اصطناعي متقدمة لمساعدتك في الإجابة عن أسئلتك وتنفيذ مهامك.";
-
-    // لو المستخدم بيسأل عن هوية Z AI
-    const normalizedMessage = userMessage
-      .toLowerCase()
-      .replace(/[؟?!.,،]/g, "")
-      .trim();
-
-    const identityQuestions = [
-      "من أنت",
-      "مين انت",
-      "مين أنت",
-      "من انت",
-      "من هو z ai",
-      "من هو z ai",
-      "ايه z ai",
-      "ما هو z ai",
-      "ما هو z ai",
-      "عرف نفسك",
-      "عرفني بنفسك",
-      "من انت z ai",
-      "مين z ai"
-    ];
-
-    if (identityQuestions.includes(normalizedMessage)) {
-      return res.status(200).json({
-        reply: identityMessage
-      });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "GEMINI_API_KEY is not configured in Vercel."
+        error: "OPENAI_API_KEY is not configured in Vercel."
       });
     }
 
+    /*
+      =====================================================
+      Z AI SYSTEM INSTRUCTIONS
+      =====================================================
+    */
+
+    const systemInstructions = `
+أنت Z AI، مساعد ذكاء اصطناعي مفيد وذكي وودود.
+
+المطور:
+ZIAD Alaa Zakii
+
+قواعد مهمة جدًا:
+
+1. لا تبدأ كل إجابة بتعريف نفسك.
+2. لا تكتب تعريف Z AI إلا إذا سأل المستخدم عن هويتك أو من طورك.
+3. إذا سأل المستخدم عن هويتك، استخدم هذا النص حرفيًا:
+
+"أنا Z AI، مساعد ذكاء اصطناعي تم تطويره بواسطة ZIAD Alaa Zakii. أستخدم نماذج ذكاء اصطناعي متقدمة لمساعدتك في الإجابة عن أسئلتك وتنفيذ مهامك."
+
+4. لا تكتب اسم المطور بالعربية.
+5. اسم المطور الصحيح دائمًا:
+ZIAD Alaa Zakii
+
+6. لا تخمن المعلومات.
+7. إذا كانت المعلومة غير مؤكدة أو حديثة جدًا، استخدم أدوات البحث المتاحة إذا كانت متاحة، أو وضّح أنك غير متأكد.
+8. لا توافق المستخدم لمجرد أنه قال معلومة.
+9. صحح المعلومات الخاطئة بأدب.
+10. تعامل مع التاريخ الحالي على أنه تاريخ النظام الحالي، ولا تخترع تاريخًا قديمًا.
+11. أجب باللغة التي يستخدمها المستخدم.
+12. إذا كان السؤال يحتاج شرحًا، اجعله منظمًا بعناوين ونقاط.
+13. إذا كتبت كودًا، استخدم Markdown code blocks وحدد لغة الكود.
+14. لا تضع إجاباتك داخل إطار أو Bubble.
+15. لا تضف مقدمة غير ضرورية.
+16. لا تقل "بالطبع" أو "بالتأكيد" في بداية كل إجابة بشكل متكرر.
+17. إذا أرسل المستخدم صورة، حللها.
+18. إذا أرسل المستخدم ملفًا، حاول فهم محتواه والإجابة بناءً عليه.
+19. إذا طلب المستخدم إنشاء صورة، أخبر التطبيق أن الطلب يحتاج image generation.
+20. كن طبيعيًا في الحوار ولا تكرر نفس الجمل.
+
+أنت تعمل داخل تطبيق اسمه Z AI.
+`;
+
+    /*
+      =====================================================
+      BUILD INPUT
+      =====================================================
+    */
+
+    const input = [];
+
+    input.push({
+      role: "developer",
+      content: [
+        {
+          type: "input_text",
+          text: systemInstructions
+        }
+      ]
+    });
+
+    /*
+      =====================================================
+      PREVIOUS CHAT HISTORY
+      =====================================================
+    */
+
+    if (Array.isArray(history)) {
+      for (const item of history.slice(-30)) {
+        if (!item || !item.role || !item.content) {
+          continue;
+        }
+
+        const role =
+          item.role === "assistant"
+            ? "assistant"
+            : "user";
+
+        input.push({
+          role,
+          content: [
+            {
+              type: "input_text",
+              text: String(item.content)
+            }
+          ]
+        });
+      }
+    }
+
+    /*
+      =====================================================
+      CURRENT USER MESSAGE
+      =====================================================
+    */
+
+    const currentContent = [];
+
+    if (message && message.trim()) {
+      currentContent.push({
+        type: "input_text",
+        text: message.trim()
+      });
+    }
+
+    /*
+      =====================================================
+      IMAGES / FILES
+      =====================================================
+    */
+
+    if (Array.isArray(attachments)) {
+      for (const file of attachments.slice(0, 5)) {
+        if (!file || !file.data) {
+          continue;
+        }
+
+        const mime =
+          file.type ||
+          "application/octet-stream";
+
+        const filename =
+          file.name ||
+          "uploaded-file";
+
+        /*
+          IMAGE
+        */
+
+        if (mime.startsWith("image/")) {
+          currentContent.push({
+            type: "input_image",
+            image_url: file.data,
+            detail: "auto"
+          });
+
+          currentContent.push({
+            type: "input_text",
+            text: `الصورة المرفقة اسمها: ${filename}`
+          });
+
+          continue;
+        }
+
+        /*
+          OTHER FILES
+        */
+
+        currentContent.push({
+          type: "input_file",
+          filename,
+          file_data: file.data
+        });
+      }
+    }
+
+    input.push({
+      role: "user",
+      content: currentContent
+    });
+
+    /*
+      =====================================================
+      OPENAI REQUEST
+      =====================================================
+    */
+
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+      "https://api.openai.com/v1/responses",
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
+          Authorization: `Bearer ${apiKey}`
         },
+
         body: JSON.stringify({
-          contents: [
+          model: "gpt-5.6",
+          input,
+
+          /*
+            Web search helps with current information.
+          */
+
+          tools: [
             {
-              role: "user",
-              parts: [
-                {
-                  text:
-                    `أنت Z AI، مساعد ذكاء اصطناعي مفيد وودود.
-
-هوية Z AI الرسمية:
-${identityMessage}
-
-إذا سألك المستخدم عن هويتك أو من أنت، يجب أن يكون تعريفك مطابقًا للنص الرسمي أعلاه حرفيًا.
-
-في الأسئلة الأخرى، أجب بشكل طبيعي ومفيد باللغة التي يستخدمها المستخدم.
-
-رسالة المستخدم:
-${userMessage}`
-                }
-              ]
+              type: "web_search"
             }
           ]
         })
       }
     );
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     if (!response.ok) {
-      console.error("Gemini API error:", data);
+      console.error(
+        "OpenAI API error:",
+        data
+      );
 
       return res.status(response.status).json({
         error:
           data?.error?.message ||
-          "Gemini API request failed."
+          "OpenAI API request failed."
       });
     }
 
     const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      data?.output_text;
 
     if (!reply) {
       return res.status(500).json({
-        error: "Gemini returned an empty response."
+        error:
+          "OpenAI returned an empty response."
       });
     }
 
@@ -116,10 +254,15 @@ ${userMessage}`
     });
 
   } catch (error) {
-    console.error("Server error:", error);
+
+    console.error(
+      "Z AI server error:",
+      error
+    );
 
     return res.status(500).json({
-      error: "حدث خطأ في الاتصال بالذكاء الاصطناعي."
+      error:
+        "حدث خطأ في الاتصال بالذكاء الاصطناعي."
     });
   }
 }
