@@ -21,11 +21,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    /*
+      =====================================================
+      GEMINI API KEY
+      =====================================================
+    */
+
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "OPENAI_API_KEY is not configured in Vercel."
+        error: "GEMINI_API_KEY is not configured in Vercel."
       });
     }
 
@@ -54,10 +60,10 @@ ZIAD Alaa Zakii
 ZIAD Alaa Zakii
 
 6. لا تخمن المعلومات.
-7. إذا كانت المعلومة غير مؤكدة أو حديثة جدًا، استخدم أدوات البحث المتاحة إذا كانت متاحة، أو وضّح أنك غير متأكد.
+7. إذا كانت المعلومة غير مؤكدة أو حديثة جدًا، استخدم البحث على الويب إذا كان متاحًا.
 8. لا توافق المستخدم لمجرد أنه قال معلومة.
 9. صحح المعلومات الخاطئة بأدب.
-10. تعامل مع التاريخ الحالي على أنه تاريخ النظام الحالي، ولا تخترع تاريخًا قديمًا.
+10. تعامل مع التاريخ الحالي على أنه تاريخ النظام الحالي.
 11. أجب باللغة التي يستخدمها المستخدم.
 12. إذا كان السؤال يحتاج شرحًا، اجعله منظمًا بعناوين ونقاط.
 13. إذا كتبت كودًا، استخدم Markdown code blocks وحدد لغة الكود.
@@ -74,21 +80,11 @@ ZIAD Alaa Zakii
 
     /*
       =====================================================
-      BUILD INPUT
+      BUILD GEMINI CONTENTS
       =====================================================
     */
 
-    const input = [];
-
-    input.push({
-      role: "developer",
-      content: [
-        {
-          type: "input_text",
-          text: systemInstructions
-        }
-      ]
-    });
+    const contents = [];
 
     /*
       =====================================================
@@ -104,14 +100,13 @@ ZIAD Alaa Zakii
 
         const role =
           item.role === "assistant"
-            ? "assistant"
+            ? "model"
             : "user";
 
-        input.push({
+        contents.push({
           role,
-          content: [
+          parts: [
             {
-              type: "input_text",
               text: String(item.content)
             }
           ]
@@ -125,11 +120,10 @@ ZIAD Alaa Zakii
       =====================================================
     */
 
-    const currentContent = [];
+    const currentParts = [];
 
     if (message && message.trim()) {
-      currentContent.push({
-        type: "input_text",
+      currentParts.push({
         text: message.trim()
       });
     }
@@ -155,68 +149,82 @@ ZIAD Alaa Zakii
           "uploaded-file";
 
         /*
-          IMAGE
+          -------------------------------------------------
+          Convert data URL to pure base64
+          -------------------------------------------------
         */
 
-        if (mime.startsWith("image/")) {
-          currentContent.push({
-            type: "input_image",
-            image_url: file.data,
-            detail: "auto"
-          });
+        let base64Data = String(file.data);
 
-          currentContent.push({
-            type: "input_text",
-            text: `الصورة المرفقة اسمها: ${filename}`
-          });
-
-          continue;
+        if (base64Data.includes(",")) {
+          base64Data =
+            base64Data.split(",")[1];
         }
 
         /*
-          OTHER FILES
+          -------------------------------------------------
+          IMAGE / FILE
+          -------------------------------------------------
         */
 
-        currentContent.push({
-          type: "input_file",
-          filename,
-          file_data: file.data
+        currentParts.push({
+          inline_data: {
+            mime_type: mime,
+            data: base64Data
+          }
+        });
+
+        currentParts.push({
+          text: `الملف المرفق اسمه: ${filename}`
         });
       }
     }
 
-    input.push({
+    /*
+      إضافة رسالة المستخدم الحالية
+    */
+
+    contents.push({
       role: "user",
-      content: currentContent
+      parts: currentParts
     });
 
     /*
       =====================================================
-      OPENAI REQUEST
+      GEMINI REQUEST
       =====================================================
     */
 
     const response = await fetch(
-      "https://api.openai.com/v1/responses",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
       {
         method: "POST",
 
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
+          "x-goog-api-key": apiKey
         },
 
         body: JSON.stringify({
-          model: "gpt-5.6",
-          input,
+          systemInstruction: {
+            parts: [
+              {
+                text: systemInstructions
+              }
+            ]
+          },
+
+          contents,
 
           /*
-            Web search helps with current information.
+            Google Search
+            يسمح لـ Gemini بالبحث عن المعلومات
+            الحديثة عند الحاجة.
           */
 
           tools: [
             {
-              type: "web_search"
+              google_search: {}
             }
           ]
         })
@@ -226,28 +234,49 @@ ZIAD Alaa Zakii
     const data =
       await response.json();
 
+    /*
+      =====================================================
+      GEMINI ERROR
+      =====================================================
+    */
+
     if (!response.ok) {
       console.error(
-        "OpenAI API error:",
+        "Gemini API error:",
         data
       );
 
       return res.status(response.status).json({
         error:
           data?.error?.message ||
-          "OpenAI API request failed."
+          "Gemini API request failed."
       });
     }
+
+    /*
+      =====================================================
+      GET RESPONSE TEXT
+      =====================================================
+    */
 
     const reply =
-      data?.output_text;
+      data?.candidates?.[0]?.content?.parts
+        ?.filter(part => part.text)
+        ?.map(part => part.text)
+        ?.join("") || "";
 
-    if (!reply) {
+    if (!reply.trim()) {
       return res.status(500).json({
         error:
-          "OpenAI returned an empty response."
+          "Gemini returned an empty response."
       });
     }
+
+    /*
+      =====================================================
+      SUCCESS
+      =====================================================
+    */
 
     return res.status(200).json({
       reply
